@@ -53,8 +53,10 @@ build.extra_flags=
 build.lfclk_flags=
 
 nrf.sdk.path={build.core.path}/SDK
+nrf.sdk.zboss.path={build.core.path}/SDK/external/zboss
+nrf.sdk.nRF802154radiodriver.path={build.core.path}/SDK/external/nRF-IEEE-802.15.4-radio-driver
 
-compiler.nrf.flags=-DNRF5 "-I{nrf.sdk.path}/components/toolchain/" "-I{nrf.sdk.path}/components/toolchain/CMSIS/Include" "-I{nrf.sdk.path}/components/toolchain/gcc/" "-I{nrf.sdk.path}/components/device/" "-I{nrf.sdk.path}/components/drivers_nrf/delay/" "-I{nrf.sdk.path}/components/softdevice/{softdevice}/headers/"
+compiler.nrf.flags= -DNRF5 -DNRF52840_XXAA "-I{nrf.sdk.path}/components/toolchain/" "-I{nrf.sdk.path}/zigbee" "-I{nrf.sdk.path}/components/toolchain/CMSIS/Include" "-I{nrf.sdk.path}/components/toolchain/gcc/" "-I{nrf.sdk.path}/components/device/" "-I{nrf.sdk.path}/components/drivers_nrf/delay/" "-I{nrf.sdk.path}/components/softdevice/{softdevice}/headers/" "-I{nrf.sdk.zboss.path}/include" "-I{nrf.sdk.zboss.path}/zb_error" "-I{nrf.sdk.nRF802154radiodriver.path}/src" "-I{nrf.sdk.zboss.path}/osif" "-I{nrf.sdk.zboss.path}/addons" "-I{nrf.sdk.zboss.path}/include/ha" "-I{nrf.sdk.zboss.path}/include/osif" "-I{nrf.sdk.path}" "-I{nrf.sdk.path}/components/libraries/timer" "-I{nrf.sdk.path}/components/libraries/pwr_mgmt" "-I{nrf.sdk.path}/components/libraries/fstorage" "-I{nrf.sdk.path}/components/libraries/memobj" "-I{nrf.sdk.path}/components/libraries/balloc" "-I{nrf.sdk.path}/components/libraries/ringbuf" "-I{nrf.sdk.path}/components/libraries/atomic" "-I{nrf.sdk.path}/components/libraries/experimental_section_vars" "-I{nrf.sdk.path}/components/libraries/strerror" "-I{nrf.sdk.path}/components/libraries/log" "-I{nrf.sdk.path}/components/libraries/log/src" "-I{nrf.sdk.zboss.path}/include/zcl" "-I{nrf.sdk.path}/components/libraries/util" "-I{nrf.sdk.path}/components/libraries/bsp" "-I{nrf.sdk.path}/modules/nrfx" "-I{nrf.sdk.path}/modules/nrfx/hal" "-I{nrf.sdk.path}/modules/nrfx/templates/nRF52840" "-I{nrf.sdk.path}/modules/nrfx/drivers" "-I{nrf.sdk.path}/integration/nrfx" "-I{nrf.sdk.path}/integration/nrfx/legacy" "-I{nrf.sdk.path}/modules/nrfx/templates" "-I{nrf.sdk.path}/modules/nrfx/drivers/include" "-I{nrf.sdk.path}/components/boards" "-I{nrf.sdk.path}/components/libraries/button" "-I{nrf.sdk.path}/components/zigbee/common" "-I{build.core.path}/SDK/external/fprintf" "-I{nrf.sdk.path}/components/libraries/queue" "-I{nrf.sdk.path}/components/libraries/atomic_fifo"
 
 # These can be overridden in platform.local.txt
 compiler.c.extra_flags=
@@ -82,7 +84,8 @@ recipe.S.o.pattern="{compiler.path}{compiler.S.cmd}" {compiler.S.flags} -DF_CPU=
 recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} {compiler.ar.extra_flags} "{archive_file_path}" "{object_file}"
 
 ## Combine gc-sections, archives, and objects
-recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}"  "-L{build.path}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} "-L{nrf.sdk.path}/components/toolchain/gcc/" "-L{nrf.sdk.path}/components/softdevice/{softdevice}/toolchain/armgcc/" "-T{build.ldscript}" "-Wl,-Map,{build.path}/{build.project_name}.map" --specs=nano.specs --specs=nosys.specs {compiler.ldflags} -o "{build.path}/{build.project_name}.elf" {object_files} -Wl,--start-group -lm "{build.path}/{archive_file}" -Wl,--end-group
+#recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" "-L{nrf.sdk.zboss.path}/lib/gcc" "-L{build.path}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} "-L{nrf.sdk.path}/components/toolchain/gcc/" "-L{nrf.sdk.path}/components/softdevice/{softdevice}/toolchain/armgcc/" "-T{build.ldscript}" "-Wl,-Map,{build.path}/{build.project_name}.map" --specs=nano.specs --specs=nosys.specs {compiler.ldflags} -o "{build.path}/{build.project_name}.elf" {object_files} -Wl,--start-group -lm "{nrf.sdk.zboss.path}/lib/gcc/nrf52840/nrf_radio_driver.a" "{build.path}/{archive_file}"  -lzboss -Wl,--end-group 
+recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" "-L{nrf.sdk.zboss.path}/lib/gcc" "-L{build.path}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} "-L{nrf.sdk.path}/components/toolchain/gcc/" "-L{nrf.sdk.path}/components/softdevice/{softdevice}/toolchain/armgcc/" "-T{build.ldscript}" "-Wl,-Map,{build.path}/{build.project_name}.map" --specs=nano.specs --specs=nosys.specs {compiler.ldflags} -o "{build.path}/{build.project_name}.elf" {object_files} -Wl,--start-group -lm  "{build.path}/{archive_file}" -Wl,--end-group 
 
 ## Create output (bin file)
 recipe.objcopy.bin.pattern="{compiler.path}{compiler.elf2bin.cmd}" {compiler.elf2bin.flags} {compiler.elf2bin.extra_flags} "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.bin"
@@ -157,3 +160,14 @@ tools.blackmagicprobe.bootloader.params.verbose=
 tools.blackmagicprobe.bootloader.params.quiet=-q --batch-silent
 tools.blackmagicprobe.bootloader.pattern="{path}{cmd}" -quiet -cd "{runtime.platform.path}/cores/nRF5/SDK/components/softdevice/{softdevice}/hex/" -ex "target extended-remote {serial.port}" -ex "monitor swdp_scan" -ex "attach 1" -ex "monitor erase mass" -ex "load {softdevice}_{upload.target}_{softdeviceversion}_softdevice.hex" -ex "echo \nSoftdevice upload complete!\n" -ex "detach" -ex "quit"
 tools.blackmagicprobe.bootloader.pattern.windows="{path}{cmd}" -quiet -cd "{runtime.platform.path}/cores/nRF5/SDK/components/softdevice/{softdevice}/hex/" -ex "target extended-remote \\.\{serial.port}" -ex "monitor swdp_scan" -ex "attach 1" -ex "monitor erase mass" -ex "load {softdevice}_{upload.target}_{softdeviceversion}_softdevice.hex" -ex "echo \nSoftdevice upload complete!\n" -ex "detach" -ex "quit"
+
+#
+# BOSSA
+#
+tools.bossac.path={runtime.tools.bossac-1.9.1-arduino2.path}
+tools.bossac.cmd=bossac
+tools.bossac.cmd.windows=bossac.exe
+
+tools.bossac.upload.params.verbose=-d
+tools.bossac.upload.params.quiet=
+tools.bossac.upload.pattern="{path}/{cmd}" {upload.verbose} --port={serial.port.file} -U -i -e -w "{build.path}/{build.project_name}.bin" -R
