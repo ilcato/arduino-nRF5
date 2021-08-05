@@ -609,9 +609,9 @@ void nrf_802154_receive_failed(nrf_802154_rx_error_t error)
 #endif /* defined ZB_NRF52_RADIO_STATISTICS */
 
   /* Should be disabled in MAC certification tests, so TRACE_MAC1 is used. */
-  TRACE_ENTER_INT();
-  TRACE_MSG(TRACE_MAC1, ">> nrf_802154_receive_failed, %d ", (FMT__D, error));
-  TRACE_LEAVE_INT();
+//   TRACE_ENTER_INT();
+//   TRACE_MSG(TRACE_MAC1, ">> nrf_802154_receive_failed, %d ", (FMT__D, error));
+//   TRACE_LEAVE_INT();
 }
 
 zb_bool_t zb_transceiver_set_pending_bit(zb_uint8_t *addr, zb_bool_t value, zb_bool_t extended)
